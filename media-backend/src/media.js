@@ -8,6 +8,9 @@ const authRequired = require('./authRequired');
 
 const router = express.Router();
 
+/* ---------- secure ALL /media routes ---------- */
+router.use(authRequired);
+
 /* ---------- uploads setup ---------- */
 const uploadDir = path.join(process.cwd(), 'uploads');
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -23,7 +26,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 /* ---------- create media (metadata) ---------- */
-router.post('/', authRequired, async (req, res) => {
+router.post('/', async (req, res) => {
   const { title, type, fileUrl } = req.body || {};
   if (!title || !type || !fileUrl) return res.status(400).json({ error: 'title, type, fileUrl required' });
   try {
@@ -40,7 +43,7 @@ router.post('/', authRequired, async (req, res) => {
 });
 
 /* ---------- upload a file; returns fileUrl ---------- */
-router.post('/upload', authRequired, upload.single('file'), async (req, res) => {
+router.post('/upload', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'no file' });
   // normalize to forward slashes so it works on Windows paths
   const rel = path.relative(process.cwd(), req.file.path).replace(/\\/g, '/');
@@ -64,6 +67,8 @@ router.get('/', async (req, res) => {
 });
 
 /* ---------- secure stream-url (10 min) ---------- */
+// NOTE: We no longer log a view here to avoid double-counting.
+// Use POST /media/:id/view to record views.
 router.get('/:id/stream-url', async (req, res) => {
   const id = Number(req.params.id);
   try {
@@ -72,9 +77,6 @@ router.get('/:id/stream-url', async (req, res) => {
 
     const token = jwt.sign({ mid: id }, process.env.JWT_SECRET, { expiresIn: '10m' });
     const url = `${process.env.BASE_URL}/stream/${id}?token=${encodeURIComponent(token)}`;
-
-    const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString().slice(0, 45);
-    await pool.execute('INSERT INTO MediaViewLog (media_id, ip) VALUES (?, ?)', [id, ip]);
 
     res.json({ streamUrl: url, expiresInSeconds: 600, type: rows[0].type });
   } catch (e) {
@@ -97,7 +99,7 @@ router.get('/:id', async (req, res) => {
 });
 
 /* ---------- delete media ---------- */
-router.delete('/:id', authRequired, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   const id = Number(req.params.id);
   try {
     const [rows] = await pool.execute('SELECT file_url FROM MediaAsset WHERE id=?', [id]);
@@ -117,6 +119,61 @@ router.delete('/:id', authRequired, async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'failed to delete' });
+  }
+});
+
+/* ---------- log a view (IP + timestamp) ---------- */
+router.post('/:id/view', async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    const [m] = await pool.execute('SELECT id FROM MediaAsset WHERE id=?', [id]);
+    if (!m.length) return res.status(404).json({ error: 'not found' });
+
+    const ipHeader = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString();
+    const ip = ipHeader.split(',')[0].trim().slice(0, 45) || null;
+
+    await pool.execute('INSERT INTO MediaViewLog (media_id, ip) VALUES (?, ?)', [id, ip]);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'failed to log view' });
+  }
+});
+
+/* ---------- analytics for a media item ---------- */
+router.get('/:id/analytics', async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    const [m] = await pool.execute('SELECT id FROM MediaAsset WHERE id=?', [id]);
+    if (!m.length) return res.status(404).json({ error: 'not found' });
+
+    const [totals] = await pool.execute(
+      'SELECT COUNT(*) AS total_views, COUNT(DISTINCT ip) AS unique_ips FROM MediaViewLog WHERE media_id=?',
+      [id]
+    );
+    const [rows] = await pool.execute(
+      `SELECT DATE(viewed_at) AS day, COUNT(*) AS views
+         FROM MediaViewLog
+        WHERE media_id=?
+        GROUP BY day
+        ORDER BY day`,
+      [id]
+    );
+
+    const views_per_day = {};
+    for (const r of rows) {
+      const d = new Date(r.day).toISOString().slice(0, 10); // yyyy-mm-dd
+      views_per_day[d] = Number(r.views);
+    }
+
+    res.json({
+      total_views: Number(totals[0].total_views || 0),
+      unique_ips: Number(totals[0].unique_ips || 0),
+      views_per_day
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'failed to load analytics' });
   }
 });
 
