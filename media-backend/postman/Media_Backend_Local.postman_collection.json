@@ -1,0 +1,273 @@
+{
+  "info": {
+    "_postman_id": "ac9c873c-8f91-4257-8786-b6627debd82f",
+    "name": "Media Backend (Local)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_exported_using": "Postman/10",
+    "_postman_exported_at": "2025-08-15T13:14:24Z"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            ""
+          ]
+        }
+      }
+    },
+    {
+      "name": "Signup (sets token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Passw0rd!\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/signup",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "signup"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let data = {};\n",
+              "try { data = pm.response.json(); } catch(e) {}\n",
+              "if (data && data.token) {\n",
+              "  pm.environment.set('token', data.token);\n",
+              "  pm.test('Saved token to environment', function(){ pm.expect(pm.environment.get('token')).to.be.a('string'); });\n",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login (sets token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Passw0rd!\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let data = {};\n",
+              "try { data = pm.response.json(); } catch(e) {}\n",
+              "if (data && data.token) {\n",
+              "  pm.environment.set('token', data.token);\n",
+              "  pm.test('Saved token to environment', function(){ pm.expect(pm.environment.get('token')).to.be.a('string'); });\n",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Upload file (returns fileUrl)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/media/upload",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "media",
+            "upload"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let data = {};\n",
+              "try { data = pm.response.json(); } catch(e) {}\n",
+              "if (data && data.fileUrl) {\n",
+              "  pm.environment.set('fileUrl', data.fileUrl);\n",
+              "  pm.test('Saved fileUrl to environment', function(){ pm.expect(pm.environment.get('fileUrl')).to.be.a('string'); });\n",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create media (uses fileUrl)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"My Clip\",\n  \"type\": \"video\",\n  \"fileUrl\": \"{{fileUrl}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/media",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "media"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let data = {};\n",
+              "try { data = pm.response.json(); } catch(e) {}\n",
+              "if (data && data.id) {\n",
+              "  pm.environment.set('media_id', data.id);\n",
+              "  pm.test('Saved media_id to environment', function(){ pm.expect(~~pm.environment.get('media_id')).to.be.greaterThan(0); });\n",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List media",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/media",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "media"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get media by id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/media/{{media_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "media",
+            "{{media_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get 10\u2011min stream URL",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/media/{{media_id}}/stream-url",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "media",
+            "{{media_id}}",
+            "stream-url"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let data = {};\n",
+              "try { data = pm.response.json(); } catch(e) {}\n",
+              "if (data && data.streamUrl) {\n",
+              "  pm.environment.set('streamUrl', data.streamUrl);\n",
+              "  pm.test('Saved streamUrl to environment', function(){ pm.expect(pm.environment.get('streamUrl')).to.include('stream/'); });\n",
+              "}"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "event": []
+}
