@@ -1,0 +1,57 @@
+{
+  "info": {
+    "_postman_id": "2eff154c-940e-426f-8bab-c02e6378c828",
+    "name": "Media Backend (Local)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_exported_using": "Postman/10",
+    "_postman_exported_at": "2025-08-15T19:35:01Z"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Log view",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/media/{{media_id}}/view",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "media",
+            "{{media_id}}",
+            "view"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Analytics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/media/{{media_id}}/analytics",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "media",
+            "{{media_id}}",
+            "analytics"
+          ]
+        }
+      }
+    }
+  ]
+}
