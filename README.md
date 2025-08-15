@@ -123,6 +123,3 @@ No manual table creation in Workbench is required.
 - `npm run dev` — start with nodemon
 
 ---
-
-## 📄 License
-Add your preferred license (MIT recommended).
